@@ -131,7 +131,7 @@ namespace Silverback.Messaging.Broker.Callbacks
             IBrokerCallbacksInvoker callbacksInvoker,
             ISilverbackLogger logger)
         {
-            consumer.OnPartitionsRevoked();
+            consumer.OnPartitionsRevoked(partitions);
 
             partitions.ForEach(
                 topicPartitionOffset => logger.LogPartitionRevoked(topicPartitionOffset, consumer));

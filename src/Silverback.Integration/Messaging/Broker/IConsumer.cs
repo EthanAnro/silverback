@@ -56,6 +56,12 @@ namespace Silverback.Messaging.Broker
         IConsumerStatusInfo StatusInfo { get; }
 
         /// <summary>
+        ///     Gets the <see cref="ISequenceStoreCollection" /> used by this consumer. Some brokers will require
+        ///     multiple stores (e.g. the <c>KafkaConsumer</c> will create a store per each assigned partition).
+        /// </summary>
+        ISequenceStoreCollection SequenceStores { get; }
+
+        /// <summary>
         ///     Connects and starts consuming.
         /// </summary>
         /// <returns>
@@ -176,14 +182,5 @@ namespace Silverback.Messaging.Broker
         ///     The current failed attempts count after the increment.
         /// </returns>
         int IncrementFailedAttempts(IRawInboundEnvelope envelope);
-
-        /// <summary>
-        ///     Gets the <see cref="ISequenceStore" /> instances used by this consumer. Some brokers will require
-        ///     multiple stores (e.g. the <c>KafkaConsumer</c> will create a store per each assigned partition).
-        /// </summary>
-        /// <returns>
-        ///     The list of <see cref="ISequenceStore" />.
-        /// </returns>
-        IReadOnlyList<ISequenceStore> GetCurrentSequenceStores();
     }
 }

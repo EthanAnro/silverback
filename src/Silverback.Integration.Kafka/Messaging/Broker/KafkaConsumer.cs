@@ -34,9 +34,11 @@ namespace Silverback.Messaging.Broker
 
         private readonly IKafkaMessageSerializer _serializer;
 
-        private ConsumerChannelsManager? _channelsManager;
+        private readonly KafkaSequenceStoreCollection? _kafkaSequenceStoreCollection;
 
-        private ConsumeLoopHandler? _consumeLoopHandler;
+        private ConsumerChannelsManager _channelsManager;
+
+        private ConsumeLoopHandler _consumeLoopHandler;
 
         private IConsumer<byte[]?, byte[]?>? _confluentConsumer;
 
@@ -90,6 +92,8 @@ namespace Silverback.Messaging.Broker
 
             _callbacksInvoker = Check.NotNull(callbacksInvoker, nameof(callbacksInvoker));
             _logger = Check.NotNull(logger, nameof(logger));
+
+            _channelsManager = new ConsumerChannelsManager()
         }
 
         /// <summary>
@@ -108,6 +112,9 @@ namespace Silverback.Messaging.Broker
         private ConsumerChannelsManager ChannelsManager =>
             _channelsManager ?? throw new InvalidOperationException("ChannelsManager not set.");
 
+        private KafkaSequenceStoreCollection KafkaSequenceStoreCollection =>
+            _kafkaSequenceStoreCollection ?? (KafkaSequenceStoreCollection)SequenceStores;
+
         internal void OnPartitionsAssigned(IReadOnlyList<TopicPartition> partitions)
         {
             if (IsDisconnecting)
@@ -124,7 +131,7 @@ namespace Silverback.Messaging.Broker
         }
 
         [SuppressMessage("", "VSTHRD110", Justification = Justifications.FireAndForget)]
-        internal void OnPartitionsRevoked()
+        internal void OnPartitionsRevoked(IReadOnlyList<TopicPartitionOffset> partitions)
         {
             RevertReadyStatus();
 
@@ -201,6 +208,8 @@ namespace Silverback.Messaging.Broker
                     SequenceStores.Add(ServiceProvider.GetRequiredService<ISequenceStore>());
             }
         }
+
+        protected override ISequenceStoreCollection InitSequenceStore() => _kafkaSequenceStoreCollection;
 
         /// <inheritdoc cref="Consumer.ConnectCoreAsync" />
         protected override Task ConnectCoreAsync()
@@ -404,23 +413,26 @@ namespace Silverback.Messaging.Broker
 
         private void InitAndStartConsumeLoopHandler()
         {
-            _consumeLoopHandler ??= new ConsumeLoopHandler(this, _channelsManager, _logger);
-
-            if (_channelsManager != null)
-                _consumeLoopHandler.SetChannelsManager(_channelsManager);
-
-            if (IsConsuming && !IsStopping)
+            lock (_channelsLock)
             {
-                _consumeLoopHandler.Start();
+                _consumeLoopHandler ??= new ConsumeLoopHandler(this, _channelsManager, _logger);
 
-                _logger.LogConsumerLowLevelTrace(
-                    this,
-                    "ConsumeLoopHandler started. | instanceId: {instanceId}, taskId: {taskId}",
-                    () => new object[]
-                    {
-                        _consumeLoopHandler.Id,
-                        _consumeLoopHandler.Stopping.Id
-                    });
+                if (_channelsManager != null)
+                    _consumeLoopHandler.SetChannelsManager(_channelsManager);
+
+                if (IsConsuming && !IsStopping)
+                {
+                    _consumeLoopHandler.Start();
+
+                    _logger.LogConsumerLowLevelTrace(
+                        this,
+                        "ConsumeLoopHandler started. | instanceId: {instanceId}, taskId: {taskId}",
+                        () => new object[]
+                        {
+                            _consumeLoopHandler.Id,
+                            _consumeLoopHandler.Stopping.Id
+                        });
+                }
             }
         }
 

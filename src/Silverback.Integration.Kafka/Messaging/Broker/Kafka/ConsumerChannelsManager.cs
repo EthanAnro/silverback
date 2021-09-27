@@ -19,22 +19,19 @@ namespace Silverback.Messaging.Broker.Kafka
 {
     internal sealed class ConsumerChannelsManager : IDisposable
     {
-        private readonly IList<TopicPartition> _partitions;
-
         [SuppressMessage("", "CA2213", Justification = "Doesn't have to be disposed")]
         private readonly KafkaConsumer _consumer;
 
         private readonly IBrokerCallbacksInvoker _callbacksInvoker;
 
-        private readonly IList<ISequenceStore> _sequenceStores;
-
         private readonly ISilverbackLogger _logger;
 
-        private readonly Channel<ConsumeResult<byte[]?, byte[]?>>[] _channels;
 
-        private readonly CancellationTokenSource[] _readCancellationTokenSource;
+        private readonly Dictionary<TopicPartition, Channel<ConsumeResult<byte[]?, byte[]?>>> _channels = new();
 
-        private readonly TaskCompletionSource<bool>[] _readTaskCompletionSources;
+        private readonly Dictionary<TopicPartition, CancellationTokenSource> _readCancellationTokenSource = new();
+
+        private readonly Dictionary<TopicPartition, TaskCompletionSource<bool>> _readTaskCompletionSources = new();
 
         private readonly SemaphoreSlim? _messagesLimiterSemaphoreSlim;
 
@@ -47,11 +44,9 @@ namespace Silverback.Messaging.Broker.Kafka
             IList<ISequenceStore> sequenceStores,
             ISilverbackLogger logger)
         {
-            // Copy the partitions array to avoid concurrency issues if a rebalance occurs while initializing
-            _partitions = Check.NotNull(partitions, nameof(partitions)).ToList();
             _consumer = Check.NotNull(consumer, nameof(consumer));
             _callbacksInvoker = Check.NotNull(callbacksInvoker, nameof(callbacksInvoker));
-            _sequenceStores = Check.NotNull(sequenceStores, nameof(sequenceStores));
+            SequenceStores = Check.NotNull(sequenceStores, nameof(sequenceStores));
             _logger = Check.NotNull(logger, nameof(logger));
 
             _channels = consumer.Endpoint.ProcessPartitionsIndependently
@@ -84,14 +79,6 @@ namespace Silverback.Messaging.Broker.Kafka
                 _readTaskCompletionSources.Select(taskCompletionSource => taskCompletionSource.Task));
 
         public bool[] IsReading { get; }
-
-        public void StartReading()
-        {
-            if (_consumer.Endpoint.ProcessPartitionsIndependently)
-                _partitions.ForEach(StartReading);
-            else
-                StartReading(0);
-        }
 
         public void StartReading(TopicPartition topicPartition) =>
             StartReading(GetChannelIndex(topicPartition));
@@ -126,7 +113,7 @@ namespace Silverback.Messaging.Broker.Kafka
         }
 
         public ISequenceStore GetSequenceStore(TopicPartition topicPartition) =>
-            _sequenceStores[GetChannelIndex(topicPartition)];
+            SequenceStores[GetChannelIndex(topicPartition)];
 
         // There's unfortunately no async version of Confluent.Kafka.IConsumer.Consume() so we need to run
         // synchronously to stay within a single long-running thread with the Consume loop.

@@ -19,7 +19,7 @@ namespace Silverback.Messaging.Broker.Kafka
         private readonly ISilverbackLogger _logger;
 
         [SuppressMessage("", "CA2213", Justification = "Doesn't have to be disposed")]
-        private ConsumerChannelsManager? _channelsManager;
+        private readonly ConsumerChannelsManager _channelsManager;
 
         private CancellationTokenSource _cancellationTokenSource = new();
 
@@ -27,7 +27,7 @@ namespace Silverback.Messaging.Broker.Kafka
 
         public ConsumeLoopHandler(
             KafkaConsumer consumer,
-            ConsumerChannelsManager? channelsManager,
+            ConsumerChannelsManager channelsManager,
             ISilverbackLogger logger)
         {
             _consumer = Check.NotNull(consumer, nameof(consumer));
@@ -84,9 +84,6 @@ namespace Silverback.Messaging.Broker.Kafka
 
             return Stopping;
         }
-
-        public void SetChannelsManager(ConsumerChannelsManager channelsManager) =>
-            _channelsManager = channelsManager;
 
         public void Dispose()
         {
