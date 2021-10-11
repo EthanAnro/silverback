@@ -7,9 +7,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Silverback.Messaging.Broker;
+using Silverback.Util;
 
 namespace Silverback.Messaging.Sequences
 {
+    /// <summary>
+    ///     This <see cref="ISequenceStoreCollection" /> uses a single <see cref="ISequenceStore" />.
+    /// </summary>
     internal sealed class DefaultSequenceStoreCollection : ISequenceStoreCollection
     {
         private readonly object _lockObject = new();
@@ -22,7 +26,7 @@ namespace Silverback.Messaging.Sequences
 
         public DefaultSequenceStoreCollection(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
+            _serviceProvider = Check.NotNull(serviceProvider, nameof(serviceProvider));
             _sequenceStore = _serviceProvider.GetRequiredService<ISequenceStore>();
         }
 
@@ -48,12 +52,15 @@ namespace Silverback.Messaging.Sequences
             yield return _sequenceStore;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
         public async ValueTask DisposeAsync()
         {
+            if (_disposed)
+                return;
+
             await _sequenceStore.DisposeAsync().ConfigureAwait(false);
             _disposed = true;
         }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

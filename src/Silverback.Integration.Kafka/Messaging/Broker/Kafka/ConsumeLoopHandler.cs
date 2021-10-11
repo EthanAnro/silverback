@@ -25,6 +25,8 @@ namespace Silverback.Messaging.Broker.Kafka
 
         private TaskCompletionSource<bool>? _consumeTaskCompletionSource;
 
+        private bool _disposed;
+
         public ConsumeLoopHandler(
             KafkaConsumer consumer,
             ConsumerChannelsManager channelsManager,
@@ -44,6 +46,9 @@ namespace Silverback.Messaging.Broker.Kafka
         [SuppressMessage("", "VSTHRD110", Justification = Justifications.FireAndForget)]
         public void Start()
         {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().FullName);
+
             if (IsConsuming)
                 return;
 
@@ -70,6 +75,9 @@ namespace Silverback.Messaging.Broker.Kafka
 
         public Task StopAsync()
         {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().FullName);
+
             if (!IsConsuming)
                 return Stopping;
 
@@ -87,6 +95,9 @@ namespace Silverback.Messaging.Broker.Kafka
 
         public void Dispose()
         {
+            if (_disposed)
+                return;
+
             _logger.LogConsumerLowLevelTrace(
                 _consumer,
                 "Disposing ConsumeLoopHandler... | instanceId: {instanceId}",
@@ -99,6 +110,8 @@ namespace Silverback.Messaging.Broker.Kafka
                 _consumer,
                 "ConsumeLoopHandler disposed. | instanceId: {instanceId}",
                 () => new object[] { Id });
+
+            _disposed = true;
         }
 
         private async Task ConsumeAsync(

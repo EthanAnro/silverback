@@ -14,7 +14,7 @@ namespace Silverback.Messaging.Sequences
     public interface ISequenceStore : IReadOnlyCollection<ISequence>, IAsyncDisposable
     {
         /// <summary>
-        ///     Gets a value indicating whether the store has been disposed;
+        ///     Gets a value indicating whether the store has been disposed.
         /// </summary>
         bool Disposed { get; }
 

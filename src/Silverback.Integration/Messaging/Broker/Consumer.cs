@@ -17,7 +17,7 @@ using Silverback.Util;
 namespace Silverback.Messaging.Broker
 {
     /// <inheritdoc cref="IConsumer" />
-    public abstract class Consumer : IConsumer, IAsyncDisposable
+    public abstract class Consumer : IConsumer, IDisposable
     {
         private static readonly TimeSpan ReconnectRetryDelay = TimeSpan.FromSeconds(5);
 
@@ -93,7 +93,7 @@ namespace Silverback.Messaging.Broker
         public bool IsConnecting => _connectTask != null;
 
         /// <inheritdoc cref="IConsumer.SequenceStores" />
-        public ISequenceStoreCollection SequenceStores => _sequenceStores ?? InitSequenceStore();
+        public ISequenceStoreCollection SequenceStores => _sequenceStores ??= InitSequenceStore();
 
         /// <inheritdoc cref="IConsumer.IsConnected" />
         public bool IsConnected { get; private set; }
@@ -295,28 +295,10 @@ namespace Silverback.Messaging.Broker
                 (_, count) => count + 1);
         }
 
-        /// <inheritdoc cref="IAsyncDisposable.DisposeAsync" />
-        [SuppressMessage("", "CA1031", Justification = "Exception logged")]
-        public virtual async ValueTask DisposeAsync()
+        /// <inheritdoc cref="IDisposable.Dispose" />
+        public void Dispose()
         {
-            if (_disposed)
-                return;
-
-            _disposed = true;
-
-            try
-            {
-                await DisconnectAsync().ConfigureAwait(false);
-
-                _disconnectCancellationTokenSource.Dispose();
-
-                await SequenceStores.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogConsumerDisposingError(this, ex);
-            }
-
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -326,7 +308,8 @@ namespace Silverback.Messaging.Broker
         /// <returns>
         ///     An <see cref="ISequenceStoreCollection" /> instance.
         /// </returns>
-        protected virtual ISequenceStoreCollection InitSequenceStore() => new DefaultSequenceStoreCollection(ServiceProvider);
+        protected virtual ISequenceStoreCollection InitSequenceStore() =>
+            new DefaultSequenceStoreCollection(ServiceProvider);
 
         /// <summary>
         ///     Connects to the message broker.
@@ -448,6 +431,40 @@ namespace Silverback.Messaging.Broker
         {
             if (_statusInfo.Status > ConsumerStatus.Connected)
                 _statusInfo.SetConnected(true);
+        }
+
+        /// <summary>
+        ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged
+        ///     resources.
+        /// </summary>
+        /// <param name="disposing">
+        ///     A value indicating whether the method has been called by the <c>Dispose</c> method and not from the
+        ///     finalizer.
+        /// </param>
+        [SuppressMessage("", "CA1031", Justification = Justifications.ExceptionLogged)]
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing || _disposed)
+                return;
+
+            _disposed = true;
+
+            try
+            {
+                AsyncHelper.RunSynchronously(DisconnectAsync);
+
+                if (_sequenceStores != null)
+                {
+                    AsyncHelper.RunSynchronously(
+                        () => _sequenceStores.ForEachAsync(store => store.DisposeAsync().AsTask()));
+                }
+
+                _disconnectCancellationTokenSource.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogConsumerDisposingError(this, ex);
+            }
         }
 
         private async Task ConnectAndStartAsync()
