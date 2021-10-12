@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup Label="Package information">
-    <BaseVersionSuffix></BaseVersionSuffix>
-    <BaseVersion>3.4.0$(BaseVersionSuffix)</BaseVersion>
+    <BaseVersionSuffix>-beta.1</BaseVersionSuffix>
+    <BaseVersion>3.5.0$(BaseVersionSuffix)</BaseVersion>
     <DatabasePackagesRevision>1</DatabasePackagesRevision>
     <DatabasePackagesVersionSuffix>$(BaseVersionSuffix)</DatabasePackagesVersionSuffix>
   </PropertyGroup>
@@ -23,7 +23,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers " Version="16.10.56">
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers " Version="17.0.63">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
