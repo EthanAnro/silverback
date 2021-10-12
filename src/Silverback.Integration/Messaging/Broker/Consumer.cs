@@ -77,10 +77,10 @@ namespace Silverback.Messaging.Broker
             Endpoint.Validate();
         }
 
-        /// <inheritdoc cref="IConsumer.Id" />
+        /// <inheritdoc cref="IBrokerConnectedObject.Id" />
         public InstanceIdentifier Id { get; } = new();
 
-        /// <inheritdoc cref="IConsumer.Broker" />
+        /// <inheritdoc cref="IBrokerConnectedObject.Broker" />
         public IBroker Broker { get; }
 
         /// <inheritdoc cref="IConsumer.Endpoint" />
@@ -89,17 +89,17 @@ namespace Silverback.Messaging.Broker
         /// <inheritdoc cref="IConsumer.StatusInfo" />
         public IConsumerStatusInfo StatusInfo => _statusInfo;
 
-        /// <inheritdoc cref="IConsumer.IsConnecting" />
+        /// <inheritdoc cref="IBrokerConnectedObject.IsConnecting" />
         public bool IsConnecting => _connectTask != null;
 
-        /// <inheritdoc cref="IConsumer.SequenceStores" />
-        public ISequenceStoreCollection SequenceStores => _sequenceStores ??= InitSequenceStore();
-
-        /// <inheritdoc cref="IConsumer.IsConnected" />
+        /// <inheritdoc cref="IBrokerConnectedObject.IsConnected" />
         public bool IsConnected { get; private set; }
 
         /// <inheritdoc cref="IConsumer.IsConsuming" />
         public bool IsConsuming { get; protected set; }
+
+        /// <inheritdoc cref="IConsumer.SequenceStores" />
+        public ISequenceStoreCollection SequenceStores => _sequenceStores ??= InitSequenceStore();
 
         /// <summary>
         ///     Gets the <see cref="IServiceProvider" /> to be used to resolve the required services.
@@ -116,20 +116,20 @@ namespace Silverback.Messaging.Broker
         /// </summary>
         protected bool IsStopping { get; private set; }
 
-        /// <inheritdoc cref="IConsumer.ConnectAsync" />
+        /// <inheritdoc cref="IBrokerConnectedObject.ConnectAsync" />
         public async Task ConnectAsync()
         {
             await ConnectAndStartAsync().ConfigureAwait(false);
         }
 
-        /// <inheritdoc cref="IConsumer.DisconnectAsync" />
+        /// <inheritdoc cref="IBrokerConnectedObject.DisconnectAsync" />
         public async Task DisconnectAsync()
         {
             _disconnectCancellationTokenSource.Cancel();
             await StopAndDisconnectAsync().ConfigureAwait(false);
         }
 
-        /// <inheritdoc cref="IConsumer.DisconnectAsync" />
+        /// <inheritdoc cref="IBrokerConnectedObject.DisconnectAsync" />
         [SuppressMessage("", "CA1031", Justification = Justifications.ExceptionLogged)]
         public async Task TriggerReconnectAsync()
         {
