@@ -325,7 +325,7 @@ namespace Silverback.Messaging.Broker
             return Task.CompletedTask;
         }
 
-        /// <inheritdoc cref="Consumer.Dispose"/>
+        /// <inheritdoc cref="Consumer.Dispose(bool)"/>
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
