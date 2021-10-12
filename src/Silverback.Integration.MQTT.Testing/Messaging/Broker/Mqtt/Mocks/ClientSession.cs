@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client.Options;
 using MQTTnet.Client.Receiving;
+using MQTTnet.Packets;
 using Silverback.Util;
 
 namespace Silverback.Messaging.Broker.Mqtt.Mocks
@@ -121,7 +122,9 @@ namespace Silverback.Messaging.Broker.Mqtt.Mocks
 
                 var eventArgs = new MqttApplicationMessageReceivedEventArgs(
                     ClientOptions.ClientId,
-                    message);
+                    message,
+                    new MqttPublishPacket(),
+                    (_, _) => Task.CompletedTask);
 
                 await _messageHandler.HandleApplicationMessageReceivedAsync(eventArgs)
                     .ConfigureAwait(false);
