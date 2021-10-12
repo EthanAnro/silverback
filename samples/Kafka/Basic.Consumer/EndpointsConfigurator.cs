@@ -32,6 +32,10 @@ namespace Silverback.Samples.Kafka.Basic.Consumer
                                         // to connect
                                         config.GroupId = "sample-consumer";
 
+                                        config.PartitionAssignmentStrategy =
+                                            PartitionAssignmentStrategy
+                                                .CooperativeSticky;
+
                                         // AutoOffsetReset.Earliest means that the
                                         // consumer must start consuming from the
                                         // beginning of the topic, if no offset was

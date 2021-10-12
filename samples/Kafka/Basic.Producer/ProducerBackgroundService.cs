@@ -48,7 +48,7 @@ namespace Silverback.Samples.Kafka.Basic.Producer
 
                 await ProduceMessageAsync(publisher, ++number);
 
-                await Task.Delay(100, stoppingToken);
+                await Task.Delay(5000, stoppingToken);
             }
         }
 
